@@ -1,83 +1,180 @@
 <template>
+  <NavBar /> 
+  <EventBox :text="text[eventTextNum]"/>
+    {{ eventTextNum }}
+  <SearchBar :data="data_temp" @searchMovie="searchMovie($event)"/>
+  <p>
+    <button @click="showAllMovie">전체보기</button>
+  </p>
 
-  <!-- 영화정보 표시해보기 (반복문 사용법과 데이터 바인딩 시키는 방법 학습) -->
-  <h2>영화정보</h2>
-  <div v-for="(movie, i) in data" :key="i">
-    <!-- 변수 표시 하는 방법 (데이터 바인딩) --> 
-
-    <!-- <p>장르 : {{ data[i].category }}</p> 길게 써서 데이터 바인딩을 통해 표현도 가능하지만 변수명(값)을 써서 바로 뽑는게 더 편함 -->
-
-    <h3 class="bg-yellow" :style="textRed"> {{ movie.title }} </h3> <!-- :속성명="데이터" <- 속성에 값을 바인딩 할때 사용 (Vue 문법) -->
-    <p>개봉 : {{ movie.year }}</p>
-    <p>장르 : {{ movie.category }}</p>
-
-    <!-- 배열 순서대로 값을 일일이 찍어 표현할때는 이렇게도 쓸 수 있음
-    <p>{{ foods[0] }}</p>
-    <p>{{ foods[1] }}</p>
-    <p>{8{ foods[2] }}</p> -->
-    
-    <!-- 반복문 사용법 Vue 문법 -> v-for="(item, index) /* index는 배열번호를 의미 */ in 데이터" , :key="키값" <- 고유 번호를 인식할 수 있는 키값을 넣어줘야 함 -->
-    <!-- <p v-for="(item, i) in foods" :key="i">{{ item }}</p> -->
-    
-    <!-- 버튼을 클릭 할때마다 좋아요 카운트 수가 올라가는 기능 만들어보기 -->
-    <!--onClick 이벤트를 뷰에서 쓰는 방법 : v-on:이벤트명="실행코드" or 축약형으로도 적을수 있음 -> @:click="실행코드"-->    
-    <button @:click="increseLike(i)">좋아요</button> <span>{{ movie.like }}</span>
-    <!-- @:click="increseLike" 이 부분에 작성해야 될 코드가 길어지면 아래에 함수를 만들어 쓰면 된다. 
-     그래서 생성한 함수가 increseLike 이다. 아래 methods 부분을 참고하자 -->
-        
-  </div>
+  <MoviesList
+  :data="data_temp"
+  @openModal="isModal=true;selectedMovie=$event"
+  @increseLike="increseLike($event)"/>  
+  
+  <ModalApp 
+      :data="data"
+      :isModal="isModal"
+      :selectedMovie="selectedMovie"
+      @closeModal="isModal=false"
+  />
 </template>
 
 <script>
+import data from './assets/movies';
+import EventBox from './components/EventBox.vue';
+import ModalApp from './components/ModalApp';
+import MoviesList from './components/MoviesList.vue';
+import NavBar from './components/NavBar';
+import SearchBar from './components/SearchBar.vue';
+
+console.log(data);
+console.log(ModalApp);
+console.log("MoviesList 값 : " + MoviesList);
+
   export default {
     name : 'App',
-    data() { //data() {}는 상태변수를 저장하는 공간 (state value) : 화면에 자주 업데이트 되는 변수들을 정의한다.
-      return { // return문은 필수로 들어가야하며, 값이 자주 바뀌어야 할때 사용 감쌀때는 꼭 중괄호로 감싸줘야함
-        // foods: ["김밥", "순대", "만두"],
-        
-        // like : 0,
-
-        data : [
-          { 
-            title: "노량",
-            year: 2023,
-            category: "액션, 드라마",
-            textRed: "color: red",
-            like: 0,
-          },
-          { 
-            title: "아쿠아맨 & 로스트 킹덤",
-            year: 2024,
-            category: "액션, 드라마, 어드벤쳐",
-            like: 0,
-          },
-          { 
-            title: "7일의 휴가좀 주세요!",
-            year: 2023,
-            category: "판타지, 드라마",
-            like: 0,
-          },
-        ]
+    data() {
+      return { 
+        isModal: false,
+        data: data, // 원본 데이터
+        data_temp: [...data], // 사본 데이터
+        selectedMovie: 0,
+        text : ['NEOPLIX - 연습용 영화 정보 표시 플랫폼',
+                '디스니 100주년 기념작, 워시',
+                '그날, 대한민국 운명이 뒤바뀌었다, 서울의 여름'
+        ],
+        eventTextNum: 0, // 배열 번호를 의미하는 변수, 위 3가지 텍스트가 일정 시간이 지나면 변환 되도록 구현하기 위해 만듬
+        interval : null,
+        // setInterval을 해제 시키려면 변수가 필요하여 생성함
       }
     },
     methods: { 
-      // 개별적으로 좋아요 카운트 수가 올라가도록 작성한 코드
-      increseLike(i) {
-        this.data[i].like += 1; //객체 내부에서 사용하는 변수는 앞에 this를 붙여서 객체의 주소를 가르켜야(참조해야) 한다.
-      }
-      
-      /* 개별적으로 좋아요 카운트가 되기 전에 작성된 코드
-      increseLike() {
-        this.like += 1; //객체 내부에서 사용하는 변수는 앞에 this를 붙여서 객체의 주소를 가르켜야(참조해야) 한다.
-      }
+
+      /* 검색 기능 추가 하기 전 : 배열 인덱스로 모든 자료에 좋아요 카운트가 올라 갔었음
+        increseLike(i) {
+          this.data[i].like += 1; 
+       },
       */
-    }    
+
+      increseLike(id) {
+         // 일치하는 영화 자료의 id 값을 찾아 좋아요 카운트가 되게끔 수정
+         this.data.find(movie => {
+            if(movie.id == id) { // movie.id 값과 전달 받는 매개변수 id의 값이 일치하는지 확인
+              movie.like += 1;
+            }
+         }) 
+      },
+      searchMovie(title) {
+        // 영화 제목이 포함된 데이터를 가져오기
+        this.data_temp = this.data.filter(movie => {
+          return movie.title.includes(title); // 해당되는 영화 제목이 포함되어 있으면 해당 정보 리턴
+        })
+      },
+      showAllMovie() {
+        // 원본 데이터를 복사 해오기
+        this.data_temp = [...this.data];
+      }
+    },
+    components: { // 컴포넌트 등록 하는곳
+      NavBar: NavBar,
+      EventBox: EventBox,
+      ModalApp: ModalApp,
+      MoviesList: MoviesList,
+      SearchBar: SearchBar,
+    },
+    mounted() {
+      //이벤트 창에 일정시간이 경과하면 다른 광고 메시지가 노출 되도록 구현 해보기  
+      console.log('mounted');
+
+      /* 3초 후 딱 한번만 이벤트 광고 텍스트 변경 되는 로직
+        setTimeout (() => {
+          this.eventTextNum += 1;
+        }, 3000)
+      */
+
+      // 3초마다 한번씩 0~2번의 텍스트 문구로 이벤트창 내용이 바뀌는 로직
+      this.interval = setInterval(() => {
+        if(this.eventTextNum == this.text.length - 1) {
+          this.eventTextNum = 0;
+        } else {
+          this.eventTextNum += 1;
+        }
+      }, 3000)
+
+      /* setInterval()를 쓰면서 문제점이 하나 있다면 한번 실행되면 계속 실행된다는 특성이 있어 
+         컴포넌트가 종료되어도 계속 혼자 실행되고 있을 가능성이 있어 unmount (타이머를 강제로 해제) 
+         시켜 줄 로직이 필요하다 
+      */
+    },
+    unmounted() {
+      clearInterval(this.interval); // 인터발을 해제
+    }
   }
 </script>
 
 <style>
-  .bg-yellow {
-    background-color: gold;
-    padding: 10px;
+  * {
+    box-sizing: border-box;
+    margin: 0;
+  }
+
+  body {
+    max-width: 768px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  h1, h2, h3 {
+    margin-bottom: 1rem;
+  }
+
+  p {
+    margin-bottom: 0.5rem;
+  }
+
+  button {
+    margin-right: 10px;
+    margin-top: 1rem;
+  }
+
+  .item {
+    width: 100%;
+    border: 1px solid #ccc;
+    display: flex;
+    margin-bottom: 20px;
+    padding: 1rem;
+  }
+
+  .item figure {
+    width: 30%;
+    margin-right: 1rem;
+  }
+
+  .item img {
+    width: 100%;
+  }
+
+  .item .info {
+    width: 100%;
+  }
+
+  .modal {
+    background: rgba(0, 0, 0, 0.7);
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal .inner {
+    background: #fff;
+    width: 80%;
+    padding: 20px;
+    border-radius: 10px;
   }
 </style>
