@@ -9,7 +9,7 @@
             
             (검색시 고유한 id 값을 주기 전)
         -->
-       <div v-for="(movie) in data" :key="movie.id" class="item">  
+       <div v-for="(movie) in data" :key="movie.id" class="item" @click="$emit('showTheaters', movie.id)">
          <figure>
             <img :src="`${movie.imgUrl}`" :alt="movie.title">
           </figure>
@@ -30,6 +30,10 @@
 
                 <button @click="$emit('openModal', movie.id)">상세보기</button>
             </p>
+
+            <p>
+                <button @click="$emit('showTheaters', movie.id)">영화관 찾기</button> <!-- 이벤트 전달하기 -->
+            </p>
       </div>
     </div>
 </div>
@@ -38,9 +42,9 @@
 <script>
 export default {
     name: "MoviesListComponent", //컴포넌트명 등록하기
-    props: {
-        data: Array,
-    }
+    
+    // data: Array,
+    props: ['data'],
 }
 </script>
 

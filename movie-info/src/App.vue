@@ -1,23 +1,30 @@
 <template>
-  <NavBar /> 
-  <EventBox :text="text[eventTextNum]"/>
-    {{ eventTextNum }}
-  <SearchBar :data="data_temp" @searchMovie="searchMovie($event)"/>
+  <NavBar />
+  <EventBox :text="text[eventTextNum]" />
+  {{ eventTextNum }}
+  <SearchBar :data="data_temp" @searchMovie="searchMovie($event)" />
   <p>
     <button @click="showAllMovie">전체보기</button>
   </p>
 
   <MoviesList
-  :data="data_temp"
-  @openModal="isModal=true;selectedMovie=$event"
-  @increseLike="increseLike($event)"/>  
-  
-  <ModalApp 
-      :data="data"
-      :isModal="isModal"
-      :selectedMovie="selectedMovie"
-      @closeModal="isModal=false"
+    :data="data_temp"
+    @openModal="isModal=true;selectedMovie=$event"
+    @increseLike="increseLike($event)"
+    @showTheaters="showTheaters($event)"
   />
+
+  <ModalApp
+    :data="data"
+    :isModal="isModal"
+    :selectedMovie="selectedMovie"
+    @closeModal="isModal=false"
+  />
+
+  <!-- MapComponent 추가 -->
+
+  <!-- <MapComponent :latitude="37.5665" :longitude="126.9780" /> -->
+  <MapComponent :theaters="selectedTheaters" /> <!-- 지도 컴포넌트에 극장 정보를 전달 한다.-->
 </template>
 
 <script>
@@ -27,90 +34,75 @@ import ModalApp from './components/ModalApp';
 import MoviesList from './components/MoviesList.vue';
 import NavBar from './components/NavBar';
 import SearchBar from './components/SearchBar.vue';
+import MapComponent from './components/MapComponent.vue';
 
-console.log(data);
-console.log(ModalApp);
-console.log("MoviesList 값 : " + MoviesList);
-
-  export default {
-    name : 'App',
-    data() {
-      return { 
-        isModal: false,
-        data: data, // 원본 데이터
-        data_temp: [...data], // 사본 데이터
-        selectedMovie: 0,
-        text : ['NEOPLIX - 연습용 영화 정보 표시 플랫폼',
-                '디스니 100주년 기념작, 워시',
-                '그날, 대한민국 운명이 뒤바뀌었다, 서울의 여름'
-        ],
-        eventTextNum: 0, // 배열 번호를 의미하는 변수, 위 3가지 텍스트가 일정 시간이 지나면 변환 되도록 구현하기 위해 만듬
-        interval : null,
-        // setInterval을 해제 시키려면 변수가 필요하여 생성함
-      }
-    },
-    methods: { 
-
-      /* 검색 기능 추가 하기 전 : 배열 인덱스로 모든 자료에 좋아요 카운트가 올라 갔었음
-        increseLike(i) {
-          this.data[i].like += 1; 
-       },
-      */
-
-      increseLike(id) {
-         // 일치하는 영화 자료의 id 값을 찾아 좋아요 카운트가 되게끔 수정
-         this.data.find(movie => {
-            if(movie.id == id) { // movie.id 값과 전달 받는 매개변수 id의 값이 일치하는지 확인
-              movie.like += 1;
-            }
-         }) 
-      },
-      searchMovie(title) {
-        // 영화 제목이 포함된 데이터를 가져오기
-        this.data_temp = this.data.filter(movie => {
-          return movie.title.includes(title); // 해당되는 영화 제목이 포함되어 있으면 해당 정보 리턴
-        })
-      },
-      showAllMovie() {
-        // 원본 데이터를 복사 해오기
-        this.data_temp = [...this.data];
-      }
-    },
-    components: { // 컴포넌트 등록 하는곳
-      NavBar: NavBar,
-      EventBox: EventBox,
-      ModalApp: ModalApp,
-      MoviesList: MoviesList,
-      SearchBar: SearchBar,
-    },
-    mounted() {
-      //이벤트 창에 일정시간이 경과하면 다른 광고 메시지가 노출 되도록 구현 해보기  
-      console.log('mounted');
-
-      /* 3초 후 딱 한번만 이벤트 광고 텍스트 변경 되는 로직
-        setTimeout (() => {
-          this.eventTextNum += 1;
-        }, 3000)
-      */
-
-      // 3초마다 한번씩 0~2번의 텍스트 문구로 이벤트창 내용이 바뀌는 로직
-      this.interval = setInterval(() => {
-        if(this.eventTextNum == this.text.length - 1) {
-          this.eventTextNum = 0;
-        } else {
-          this.eventTextNum += 1;
+export default {
+  name: 'App',
+  components: {
+    NavBar,
+    EventBox,
+    ModalApp,
+    MoviesList,
+    SearchBar,
+    MapComponent, // 컴포넌트 등록
+  },
+  data() {
+    return {
+      isModal: false,
+      data: data,
+      data_temp: [...data], // 복사된 영화 데이터
+      selectedMovie: [], // 선택된 영화의 극장 정보를 저장
+      selectedTheaters: [], // 선택된 극장 정보 배열
+      text: [
+        'NEOPLIX - 연습용 영화 정보 표시 플랫폼',
+        '디스니 100주년 기념작, 워시',
+        '그날, 대한민국 운명이 뒤바뀌었다, 서울의 여름',
+      ],
+      eventTextNum: 0,
+      interval: null,
+    };
+  },
+  methods: {
+    increseLike(id) {
+      this.data.find((movie) => {
+        if (movie.id == id) {
+          movie.like += 1;
         }
-      }, 3000)
-
-      /* setInterval()를 쓰면서 문제점이 하나 있다면 한번 실행되면 계속 실행된다는 특성이 있어 
-         컴포넌트가 종료되어도 계속 혼자 실행되고 있을 가능성이 있어 unmount (타이머를 강제로 해제) 
-         시켜 줄 로직이 필요하다 
-      */
+      });
     },
-    unmounted() {
-      clearInterval(this.interval); // 인터발을 해제
+    searchMovie(title) {
+      this.data_temp = this.data.filter((movie) => {
+        return movie.title.includes(title);
+      });
+    },
+    showAllMovie() {
+      this.data_temp = [...this.data];
+    },
+    showTheaters(id) {
+      console.log("showTheaters id값이 제대로 전달 되는지 확인 : ", id);
+
+      // 영화 id를 기반으로 극장 정보를 선택한다.
+      const movie = this.data.find((movie) => movie.id == id);
+        if (movie) {
+          console.log("Selected movie theaters:", movie.theaters); 
+
+          this.selectedTheaters = movie.theaters; // 극장 정보를 확인한다.
+        }
     }
-  }
+  },
+  mounted() {
+    this.interval = setInterval(() => {
+      if (this.eventTextNum == this.text.length - 1) {
+        this.eventTextNum = 0;
+      } else {
+        this.eventTextNum += 1;
+      }
+    }, 3000);
+  },
+  unmounted() {
+    clearInterval(this.interval);
+  },
+};
 </script>
 
 <style>

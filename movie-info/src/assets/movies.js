@@ -7,6 +7,10 @@ const data = [
     // textRed: "color: red",
     like: 0,
     imgUrl: "./assets/노량.png",
+    theaters: [
+      { name: "강남 CGV", latitude: 37.497911, longitude: 127.027618 },
+      { name: "잠실 롯데시네마", latitude: 37.513011, longitude: 127.100106 },
+    ],
   },
   {
     id: 1,
@@ -15,6 +19,10 @@ const data = [
     category: "액션, 드라마, 어드벤쳐",
     like: 0,
     imgUrl: "./assets/아쿠아맨(메라).png",
+    theaters: [
+      { name: "홍대 메가박스", latitude: 37.556871, longitude: 126.923623 },
+      { name: "신촌 CGV", latitude: 37.555077, longitude: 126.936869 },
+    ],
   },
   {
     id: 2,
@@ -23,6 +31,9 @@ const data = [
     category: "판타지, 드라마",
     like: 0,
     imgUrl: "./assets/3일의 휴가.png",
+    theaters: [
+      { name: "코엑스 메가박스", latitude: 37.510754, longitude: 127.058318 },
+    ],
   },
 ];
 
