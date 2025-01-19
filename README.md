@@ -1,1 +1,1 @@
-# vue
+# vue3 project (study)
